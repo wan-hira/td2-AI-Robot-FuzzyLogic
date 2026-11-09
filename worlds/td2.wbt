@@ -8,21 +8,16 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/project
 WorldInfo {
 }
 Viewpoint {
-  orientation -0.3683224790815765 0.6796157790783267 0.6343980960177613 1.4139608959952257
-  position -0.5512928527452111 -1.5109483627470632 2.4696505893880145
+  orientation -0.4799392303356407 -0.12298359965273985 0.8686388026108939 3.5796319771705303
+  position 1.3585759692274753 0.8026577455712206 2.438628304733368
 }
 E-puck {
-  hidden translation_1 0 0.025999999999999968 0.02
-  hidden rotation_1 0 -1 0 4.424410392842031
-  hidden translation_2 0 -0.025999999999999992 0.02
-  hidden rotation_2 0 1 0 1.572932273366644
-  translation -0.2426951118699445 0.4511345029255904 -6.38924080259666e-05
-  rotation 0.0010569008624478002 0.0021752676337999095 0.999997075581368 -0.887398824950421
+  translation 0 0.51 0
 }
 RectangleArena {
   translation 0.21 0.2 -0.01
   name "rectangle arena(1)"
-  floorSize 1.2 0.4
+  floorSize 1.12 0.36
   floorTileSize 0.25 0.25
 }
 TexturedBackground {
@@ -30,14 +25,14 @@ TexturedBackground {
 TexturedBackgroundLight {
 }
 RectangleArena {
-  translation 0.06 0 0
+  translation 0.02 0.01 0
   floorSize 1.5 1.5
   floorTileSize 0.25 0.25
 }
 RectangleArena {
-  translation 0.0600004 -0.22 -0.01
+  translation 0.0200003 -0.18 -0.01
   rotation 0 0 1 1.5708
   name "rectangle arena(2)"
-  floorSize 0.4 0.9
+  floorSize 0.36 0.74
   floorTileSize 0.25 0.25
 }
