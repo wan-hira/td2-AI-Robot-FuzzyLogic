@@ -3,8 +3,6 @@ TP2-AI-Webots and Fuzzy-Logic
 Waneeza Hira AWAN - M1 Group 1
 """
 
-# You may need to import some classes of the controller module. Ex:
-#  from controller import Robot, Motor, DistanceSensor
 #import Robot from controller 
 from controller import Robot
 
@@ -26,11 +24,11 @@ def initialize_robot():
     
     #Set target position to infinity to enable continious velocity control
     left_motor.setPosition(float("inf"))
-    right_motor.setPosition(float'"inf")
+    right_motor.setPosition(float("inf"))
     left_motor.setVelocity(0.0)
     right_motor.setVelocity(0.0)
     
-    #Sensors names
+    #Sensors names mapping
     #Front-diagonal : ps1 (right), ps6 (left)
     #Side : ps2 (right), ps5 (left)
     #Rear : ps3 (right), ps4 (left)
@@ -38,31 +36,37 @@ def initialize_robot():
     sensor_names = ["ps0", "ps1", "ps2", "ps3", "ps4", "ps5", "ps6", "ps7"]
     distance_sensors = {}
     
-    for names in sensor_names:
+    for name in sensor_names:
         sensor = robot.getDevice(name)
         sensor.enable(timestep)
         distance_sensors[name] = sensor
         
     return robot, timestep, left_motor, right_motor, distance_sensors
     
+def main():
+    robot, timestep, left_motor, right_motor, distance_sensors = ( initialize_robot() )
     
-# You should insert a getDevice-like function in order to get the
-# instance of a device of the robot. Something like:
-#  motor = robot.getDevice('motorname')
-#  ds = robot.getDevice('dsname')
-#  ds.enable(timestep)
+    print("Controller started")
+    
+    #Main control loop
+    while robot.step(timestep) != -1:
+        #Read raw proximity values(range in 0 to 4000)
+        #Higher value means an obstacle is closer to the sensor
+        sensor_values = { 
+            name : sensor.getValue() for name, sensor in distance_sensors.items() 
+        }
+        
+        #Aggregate distance to closest obstacle on the right and on the left 
+        right_dist = max(sensor_values["ps1"], sensor_values["ps2"])
+        left_dist = max(sensor_values["ps5"], sensor_values["ps6"])
+        
+        #Display values periodically for calibration
+        print(f"Sensors -> Left : {left_dist:6.1f} | Right: {right_dist:6.1f}")
+        
+        #Move forward at cruise speed
+        left_motor.setVelocity(CRUISE_SPEED)
+        right_motor.setVelocity(CRUISE_SPEED)
 
-# Main loop:
-# - perform simulation steps until Webots is stopping the controller
-while robot.step(timestep) != -1:
-    # Read the sensors:
-    # Enter here functions to read sensor data, like:
-    #  val = ds.getValue()
+if __name__ == "__main__":
+    main()    
 
-    # Process sensor data here.
-
-    # Enter here functions to send actuator commands, like:
-    #  motor.setPosition(10.0)
-    pass
-
-# Enter here exit cleanup code.
