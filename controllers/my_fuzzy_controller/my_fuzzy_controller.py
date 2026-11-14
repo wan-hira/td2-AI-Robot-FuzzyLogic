@@ -75,8 +75,8 @@ def main():
         left_speed = max(-MAX_SPEED, min(MAX_SPEED, base_speed - turn_diff))
         right_speed = max(-MAX_SPEED, min(MAX_SPEED, base_speed + turn_diff))
         #Move forward at cruise speed
-        left_motor.setVelocity(CRUISE_SPEED)
-        right_motor.setVelocity(CRUISE_SPEED)
+        left_motor.setVelocity(left_speed)
+        right_motor.setVelocity(right_speed)
 
 if __name__ == "__main__":
     main()    
