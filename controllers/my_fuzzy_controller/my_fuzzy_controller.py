@@ -5,10 +5,13 @@ Waneeza Hira AWAN - M1 Group 1
 
 #import Robot from controller 
 from controller import Robot
+from fuzzy_logic import compute_fuzzy_control
 
 # Maximum rotational speed of the e-puck wheels (in radians per second)
 MAX_SPEED = 6.28
 CRUISE_SPEED = 0.5 * MAX_SPEED
+# Distance between left and right wheels of the e-puck (in meters)
+WHEEL_BASE = 0.052
 
 # Fonction to initialize the e-puck robot, motors and proximity distance sensors
 def initialize_robot():
@@ -33,7 +36,7 @@ def initialize_robot():
     #Side : ps2 (right), ps5 (left)
     #Rear : ps3 (right), ps4 (left)
     #Front : ps0 (right), ps7 (left)
-    sensor_names = ["ps0", "ps1", "ps2", "ps3", "ps4", "ps5", "ps6", "ps7"]
+    sensor_names = [ "ps1", "ps2", "ps3", "ps4", "ps5", "ps6"]
     distance_sensors = {}
     
     for name in sensor_names:
@@ -52,17 +55,25 @@ def main():
     while robot.step(timestep) != -1:
         #Read raw proximity values(range in 0 to 4000)
         #Higher value means an obstacle is closer to the sensor
-        sensor_values = { 
+        s = { 
             name : sensor.getValue() for name, sensor in distance_sensors.items() 
         }
         
-        #Aggregate distance to closest obstacle on the right and on the left 
-        right_dist = max(sensor_values["ps1"], sensor_values["ps2"])
-        left_dist = max(sensor_values["ps5"], sensor_values["ps6"])
-        
-        #Display values periodically for calibration
-        print(f"Sensors -> Left : {left_dist:6.1f} | Right: {right_dist:6.1f}")
-        
+        # Compute fuzzy outputs: normalized linear speed and steering angle
+        speed_ratio, delta_theta = compute_fuzzy_control(
+            left_front_diag=s["ps6"],
+            left_side=s["ps5"],
+            right_front_diag=s["ps1"],
+            right_side=s["ps2"],
+        )
+
+        # Convert (v, delta_theta) to wheel speeds
+        # Positive delta_theta turns LEFT (slows left wheel, speeds up right wheel)
+        base_speed = speed_ratio * MAX_SPEED
+        turn_diff = delta_theta * (MAX_SPEED * 0.5)
+
+        left_speed = max(-MAX_SPEED, min(MAX_SPEED, base_speed - turn_diff))
+        right_speed = max(-MAX_SPEED, min(MAX_SPEED, base_speed + turn_diff))
         #Move forward at cruise speed
         left_motor.setVelocity(CRUISE_SPEED)
         right_motor.setVelocity(CRUISE_SPEED)
