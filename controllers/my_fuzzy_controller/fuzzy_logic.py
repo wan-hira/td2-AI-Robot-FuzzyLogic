@@ -48,7 +48,7 @@ def fuzzify_distance(sensor_val):
     return {"far": far, "medium": medium, "close": close}
 
 
-def compute_fuzzy_control(left_front_diag, left_side, right_front_diag, right_side):
+def compute_fuzzy_control(left_front_diag, left_side, left_rear, right_front_diag, right_side, right_rear):
     """
     Fuzzy Controller: Outputs desired linear speed (v) and steering angle (delta_theta).
     Assumes left-wall following behavior with right-side collision safety.
@@ -56,7 +56,10 @@ def compute_fuzzy_control(left_front_diag, left_side, right_front_diag, right_si
     #Fuzzification
     l_diag = fuzzify_distance(left_front_diag)
     l_side = fuzzify_distance(left_side)
+    l_rear = fuzzify_distance(left_rear)
     r_diag = fuzzify_distance(right_front_diag)
+    r_side = fuzzify_distance(right_side)
+    r_rear = fuzzify_distance(right_rear)
 
     # Rule Base & Inference (using min for AND operator)
     # Positive delta_theta = turn LEFT | Negative delta_theta = turn RIGHT
@@ -78,10 +81,25 @@ def compute_fuzzy_control(left_front_diag, left_side, right_front_diag, right_si
     rules_angle.append((w_ideal, 0.0))
     rules_speed.append((w_ideal, 0.65))
 
-    # Rule 4: If left side is TOO FAR from the wall -> Turn LEFT to find/rejoin the wall
-    w_too_far = min(l_side["far"], l_diag["far"], r_diag["far"])
-    rules_angle.append((w_too_far, 0.40))
-    rules_speed.append((w_too_far, 0.45))
+    # Rule 4 (Outward corner detected via rear sensor ps4):
+    # Front-left and side-left just lost the wall (far), BUT rear-left (ps4) still sees the wall edge!
+    # -> Pivot LEFT tightly around the corner at low speed to re-acquire the perpendicular wall
+    wall_still_at_rear = max(l_rear["medium"], l_rear["close"])
+    w_outward_corner = min(l_side["far"], l_diag["far"], r_diag["far"], wall_still_at_rear)
+    rules_angle.append((w_outward_corner, 0.75))
+    rules_speed.append((w_outward_corner, 0.30))
+
+    # Rule 5 (Open space / Lost wall):
+    # All left sensors (front, side, rear) are far -> Gentle LEFT arc to search for a wall
+    w_open_space = min(l_side["far"], l_diag["far"], l_rear["far"], r_diag["far"])
+    rules_angle.append((w_open_space, 0.35))
+    rules_speed.append((w_open_space, 0.50))
+
+    # Rule 6 (Right-side safety clearance):
+    # Prevent rear/side right scraping when pivoting in narrow corridors
+    w_right_safety = max(r_side["close"], r_rear["close"])
+    rules_angle.append((w_right_safety, 0.40))
+    rules_speed.append((w_right_safety, 0.35))
 
     #Defuzzification 
     total_weight_angle = sum(w for w, _ in rules_angle)

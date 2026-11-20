@@ -63,8 +63,10 @@ def main():
         speed_ratio, delta_theta = compute_fuzzy_control(
             left_front_diag=s["ps6"],
             left_side=s["ps5"],
+            left_rear=s["ps4"],
             right_front_diag=s["ps1"],
             right_side=s["ps2"],
+            right_rear=s["ps3"],
         )
 
         # Convert (v, delta_theta) to wheel speeds

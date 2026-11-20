@@ -12,7 +12,8 @@ Viewpoint {
   position 1.1627927798336615 0.8212551975113858 2.4909203551439227
 }
 E-puck {
-  translation 0 0.51 0
+  translation -0.0565688 0.453432 0
+  rotation 0 0 1 2.35619
   controller "my_fuzzy_controller"
 }
 RectangleArena {
