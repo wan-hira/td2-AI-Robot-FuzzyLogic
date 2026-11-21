@@ -35,11 +35,11 @@ def trapezoidal(x, a, b, c, d):
 
 def fuzzify_distance(sensor_val):
     """
-    Convert e-puck proximity sensor reading (0 to ~4000) into linguistic degrees.
+    Convert e-puck proximity sensor reading (0 to ~4096) into linguistic degrees.
     Higher sensor reading = closer obstacle.
-    - Far: value < 250 (wall is far or absent)
+    - Far: value < 300 (wall is far or absent)
     - Medium: peak around 350 (ideal wall-following distance ~3-4 cm)
-    - Close: value > 550 (too close to the wall)
+    - Close: value > 450 (too close to the wall)
     """
     far = trapezoidal(sensor_val, -1.0, 0.0, 120.0, 300.0)
     medium = triangular(sensor_val, 150.0, 350.0, 600.0)
@@ -50,8 +50,8 @@ def fuzzify_distance(sensor_val):
 
 def compute_fuzzy_control(left_front_diag, left_side, left_rear, right_front_diag, right_side, right_rear):
     """
-    Fuzzy Controller: Outputs desired linear speed (v) and steering angle (delta_theta).
-    Assumes left-wall following behavior with right-side collision safety.
+    Compute normalized linear speed and steering angle delta_theta
+    using a 6-rule fuzzy inference system for left-wall following.
     """
     #Fuzzification
     l_diag = fuzzify_distance(left_front_diag)
@@ -66,31 +66,28 @@ def compute_fuzzy_control(left_front_diag, left_side, left_rear, right_front_dia
     rules_angle = []
     rules_speed = []
 
-    # Rule 1: If front-left or front-right sees an approaching wall (inward corner) -> Turn RIGHT sharply, slow down
+    # Rule 1: Inward corner / Front obstacle -> Turn RIGHT sharply, slow down
     w_inward_corner = max(l_diag["close"], r_diag["close"], l_diag["medium"])
     rules_angle.append((w_inward_corner, -1.0))  # Turn right
-    rules_speed.append((w_inward_corner, 0.1))   # Slow speed
+    rules_speed.append((w_inward_corner, 0.15))   # Slow speed
 
-    # Rule 2: If left side is TOO CLOSE to the wall -> Turn RIGHT gently, medium speed
+    # Rule 2: Too close to left wall -> Gentle RIGHT correction
     w_too_close = min(l_side["close"], l_diag["far"])
     rules_angle.append((w_too_close, -0.35))
     rules_speed.append((w_too_close, 0.45))
 
-    # Rule 3: If left side is at IDEAL DISTANCE (medium) and front is clear -> Go STRAIGHT, fast cruise
+    # Rule 3: Ideal parallel distance -> Go STRAIGHT at fast cruise
     w_ideal = min(l_side["medium"], l_diag["far"], r_diag["far"])
     rules_angle.append((w_ideal, 0.0))
     rules_speed.append((w_ideal, 0.65))
 
-    # Rule 4 (Outward corner detected via rear sensor ps4):
-    # Front-left and side-left just lost the wall (far), BUT rear-left (ps4) still sees the wall edge!
-    # -> Pivot LEFT tightly around the corner at low speed to re-acquire the perpendicular wall
+    # Rule 4: Outward corner detected via rear sensor (ps4) -> Pivot LEFT tightly
     wall_still_at_rear = max(l_rear["medium"], l_rear["close"])
     w_outward_corner = min(l_side["far"], l_diag["far"], r_diag["far"], wall_still_at_rear)
     rules_angle.append((w_outward_corner, 0.75))
     rules_speed.append((w_outward_corner, 0.30))
 
-    # Rule 5 (Open space / Lost wall):
-    # All left sensors (front, side, rear) are far -> Gentle LEFT arc to search for a wall
+    # Rule 5: Open space (all left sensors far) -> Gentle LEFT arc to search for wall
     w_open_space = min(l_side["far"], l_diag["far"], l_rear["far"], r_diag["far"])
     rules_angle.append((w_open_space, 0.35))
     rules_speed.append((w_open_space, 0.50))
@@ -103,15 +100,17 @@ def compute_fuzzy_control(left_front_diag, left_side, left_rear, right_front_dia
 
     #Defuzzification 
     total_weight_angle = sum(w for w, _ in rules_angle)
-    if total_weight_angle > 0:
-        delta_theta = sum(w * val for w, val in rules_angle) / total_weight_angle
-    else:
-        delta_theta = 0.0
+    delta_theta = (
+        sum(w * val for w, val in rules_angle) / total_weight_angle
+        if total_weight_angle > 0
+        else 0.0
+    )
 
     total_weight_speed = sum(w for w, _ in rules_speed)
-    if total_weight_speed > 0:
-        speed_ratio = sum(w * val for w, val in rules_speed) / total_weight_speed
-    else:
-        speed_ratio = 0.4
+    speed_ratio = (
+        sum(w * val for w, val in rules_speed) / total_weight_speed
+        if total_weight_speed > 0
+        else 0.4
+    )
 
     return speed_ratio, delta_theta
