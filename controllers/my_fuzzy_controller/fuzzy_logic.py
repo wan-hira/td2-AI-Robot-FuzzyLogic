@@ -68,8 +68,8 @@ def compute_fuzzy_control(left_front_diag, left_side, left_rear, right_front_dia
 
     # Rule 1: If front-left or front-right sees an approaching wall (inward corner) -> Turn RIGHT sharply, slow down
     w_inward_corner = max(l_diag["close"], r_diag["close"], l_diag["medium"])
-    rules_angle.append((w_inward_corner, -0.85))  # Turn right
-    rules_speed.append((w_inward_corner, 0.25))   # Slow speed
+    rules_angle.append((w_inward_corner, -1.0))  # Turn right
+    rules_speed.append((w_inward_corner, 0.15))   # Slow speed
 
     # Rule 2: If left side is TOO CLOSE to the wall -> Turn RIGHT gently, medium speed
     w_too_close = min(l_side["close"], l_diag["far"])

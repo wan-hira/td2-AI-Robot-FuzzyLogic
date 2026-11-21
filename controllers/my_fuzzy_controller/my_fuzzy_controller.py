@@ -51,8 +51,10 @@ def main():
     
     print("Controller started")
     
+    step_count = 0
     #Main control loop
     while robot.step(timestep) != -1:
+        step_count += 1
         #Read raw proximity values(range in 0 to 4000)
         #Higher value means an obstacle is closer to the sensor
         s = { 
@@ -79,6 +81,13 @@ def main():
         #Move forward at cruise speed
         left_motor.setVelocity(left_speed)
         right_motor.setVelocity(right_speed)
+        
+        # Print telemetry every 20 steps for tuning and report analysis
+        if step_count % 20 == 0:
+            print(
+                f"ps6(FL):{s['ps6']:5.0f} | ps5(L):{s['ps5']:5.0f} | ps4(RL):{s['ps4']:5.0f} "
+                f"=> speed:{speed_ratio:.2f}, angle:{delta_theta:+.2f}"
+            )
 
 if __name__ == "__main__":
     main()    
